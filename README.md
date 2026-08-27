@@ -214,8 +214,20 @@ Then deploy `dist/` anywhere static:
 ```bash
 npx wrangler pages deploy dist --project-name errands   # Cloudflare Pages
 npx netlify deploy --dir=dist --prod                    # Netlify
-npx vercel deploy --prebuilt dist                       # Vercel
+npx vercel deploy dist --prod                           # Vercel
 ```
+
+**Deploy the `dist/` folder, never the repository root**, and do not use a
+host's Git integration for this project:
+
+- `dist/` is gitignored, so it is not on GitHub — a Git-connected deploy finds
+  no site to serve.
+- The repository root is PHP. No static host can build it, because building it
+  means running WordPress, PHP and MySQL.
+
+Upload `dist/` from your machine instead, which is what the commands above do.
+(`vercel --prebuilt` is for the Build Output API and does **not** apply to a
+plain static folder.)
 
 Current export: **1158 files, 205 MB**, largest file 6.1 MB — inside Cloudflare
 Pages' limits (25 MB per file, 20 000 files).
