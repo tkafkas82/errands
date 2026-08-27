@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ERRANDS_VERSION', '1.1.0' );
+define( 'ERRANDS_VERSION', '1.2.0' );
 
 require_once get_template_directory() . '/inc/placeholder.php';
 

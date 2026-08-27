@@ -10,6 +10,41 @@
 	var i18n = window.ERRANDS_I18N || { of: 'of' };
 
 	/* ---------------------------------------------------------------
+	 * Broken cover images fall back to the drawn cover
+	 *
+	 * The drawing is already in the markup underneath every cover, so this
+	 * only has to reveal it. Registered first, and in the capture phase,
+	 * because resource error events do not bubble.
+	 * -------------------------------------------------------------- */
+
+	function markBroken(img) {
+		var holder = img.closest('.card__media, .project-hero');
+		if (holder && !holder.classList.contains('is-broken')) {
+			holder.classList.add('is-broken');
+		}
+	}
+
+	document.addEventListener(
+		'error',
+		function (e) {
+			var t = e.target;
+			if (t && t.tagName === 'IMG') markBroken(t);
+		},
+		true
+	);
+
+	// Catch anything that already failed before this script ran.
+	function sweepBrokenImages() {
+		var imgs = document.querySelectorAll('.card__media img, .project-hero img');
+		Array.prototype.forEach.call(imgs, function (img) {
+			if (img.complete && img.naturalWidth === 0) markBroken(img);
+		});
+	}
+
+	sweepBrokenImages();
+	window.addEventListener('load', sweepBrokenImages);
+
+	/* ---------------------------------------------------------------
 	 * Theme toggle
 	 * -------------------------------------------------------------- */
 

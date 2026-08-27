@@ -25,8 +25,18 @@ $errands_slugs = ( ! is_wp_error( $errands_terms ) && $errands_terms )
 	data-series="<?php echo esc_attr( $errands_slugs ); ?>"
 	data-year="<?php echo esc_attr( get_the_date( 'Y' ) ); ?>"
 >
-	<a class="card__media <?php echo $errands_cover ? '' : 'card__media--drawn'; ?>" href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true">
+	<?php
+	$errands_ph_variant = ( 'wide' === $errands_span || 'full' === $errands_span ) ? 'wide' : 'card';
+	?>
+	<a class="card__media <?php echo $errands_cover ? 'card__media--photo' : 'card__media--drawn'; ?>" href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true">
 		<?php
+		// The drawn cover is always in the markup. With no photograph it simply
+		// shows; with one it sits behind as a fallback, revealed by JS if the
+		// image fails to load. It has to be inline rather than fetched on
+		// demand, because the usual reason an image fails is that the server
+		// has gone away — at which point fetching a replacement would fail too.
+		errands_the_placeholder( get_the_ID(), $errands_ph_variant );
+
 		if ( $errands_cover ) {
 			echo wp_get_attachment_image( $errands_cover, 'errands-card', false, array(
 				'alt'      => '',
@@ -34,9 +44,6 @@ $errands_slugs = ( ! is_wp_error( $errands_terms ) && $errands_terms )
 				'decoding' => 'async',
 				'sizes'    => '(max-width: 620px) 100vw, (max-width: 1040px) 50vw, 33vw',
 			) );
-		} else {
-			// No photograph on record — draw a cover instead.
-			errands_the_placeholder( get_the_ID(), 'wide' === $errands_span || 'full' === $errands_span ? 'wide' : 'card' );
 		}
 
 		if ( $errands_count > 1 ) {

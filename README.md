@@ -154,6 +154,15 @@ custom properties, so it follows light/dark like everything else, and it renders
 at four canvas ratios (`card`, `wide`, `hero`, `tile`) for the grid, the single
 view and the index rail.
 
+**It also covers failed image loads.** The drawing is always present in the
+markup, sitting behind the photograph; if the image cannot be loaded, JS adds
+`.is-broken` and the drawing takes over, so a tile is never blank. It has to be
+inline rather than fetched on demand, because the usual reason an image fails is
+that the server has gone away — at which point fetching a replacement would fail
+too. Detection is a capture-phase `error` listener (resource errors do not
+bubble) plus a `naturalWidth === 0` sweep for anything that failed before the
+script ran.
+
 ## How the content was migrated
 
 1. **Scrape** (`scrape.js`). WordPress 4.4 predates the REST content endpoints,

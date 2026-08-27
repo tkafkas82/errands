@@ -19,8 +19,12 @@ while ( have_posts() ) :
 
 	<article>
 
-		<div class="project-hero <?php echo $errands_cover ? '' : 'project-hero--drawn'; ?>">
+		<div class="project-hero <?php echo $errands_cover ? 'project-hero--photo' : 'project-hero--drawn'; ?>">
 			<?php
+			// Same arrangement as the cards: the drawing is always present, and
+			// stands in if the photograph cannot be loaded.
+			errands_the_placeholder( get_the_ID(), 'hero' );
+
 			if ( $errands_cover ) {
 				echo wp_get_attachment_image( $errands_cover, 'errands-hero', false, array(
 					'alt'           => get_the_title(),
@@ -28,8 +32,6 @@ while ( have_posts() ) :
 					'decoding'      => 'async',
 					'sizes'         => '100vw',
 				) );
-			} else {
-				errands_the_placeholder( get_the_ID(), 'hero' );
 			}
 			?>
 		</div>

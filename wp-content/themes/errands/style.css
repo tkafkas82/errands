@@ -570,15 +570,34 @@ p:last-child { margin-bottom: 0; }
 .ph__dots   { fill: var(--ink); opacity: 0.4; }
 .ph__strut  { stroke: var(--accent); stroke-width: 1.5; fill: none; opacity: 0.5; }
 
-/* The drawing is line art, so the hover wash would muddy it. */
-.card__media--drawn::after { display: none; }
-.card__media--drawn .ph {
-	transition: transform 0.7s var(--ease);
+/* The drawing always sits in the markup. Where there is a photograph it lies
+   underneath as a fallback; `.is-broken` is set by JS when the image fails. */
+.card__media .ph,
+.project-hero--photo .ph {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 }
-.card:hover .card__media--drawn .ph { transform: scale(1.03); }
+.card__media img,
+.project-hero--photo img { position: relative; z-index: 1; }
+
+.card__media.is-broken img,
+.project-hero--photo.is-broken img { display: none; }
+
+/* The drawing is line art, so the hover wash would muddy it. */
+.card__media--drawn::after,
+.card__media.is-broken::after { display: none; }
+
+.card__media .ph { transition: transform 0.7s var(--ease); }
+.card:hover .card__media--drawn .ph,
+.card:hover .card__media.is-broken .ph { transform: scale(1.03); }
 
 .project-hero--drawn { aspect-ratio: 24 / 11; max-height: min(70vh, 780px); }
 .project-hero--drawn .ph { height: 100%; }
+
+/* With the photograph gone there is no element left to give the hero height. */
+.project-hero--photo.is-broken { aspect-ratio: 24 / 11; max-height: min(70vh, 780px); }
 
 .idx__thumb--drawn {
 	display: block;
