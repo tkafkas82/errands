@@ -1,0 +1,17 @@
+# Normalise to LF in the repository.
+* text=auto eol=lf
+
+# Shell scripts must stay LF: setup.sh runs inside WSL, and a CRLF checkout
+# fails there with "bad interpreter: /usr/bin/env bash^M".
+*.sh text eol=lf
+
+# Batch files are Windows-only and want CRLF.
+*.bat text eol=crlf
+
+# Binary assets — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

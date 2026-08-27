@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ERRANDS">
+	<style>
+		.bg    { fill: #f6f4f1; }
+		.frame { fill: none; stroke: #16110f; stroke-width: 3; }
+		.block { fill: #ff3706; }
+		@media (prefers-color-scheme: dark) {
+			.bg    { fill: #100e0d; }
+			.frame { stroke: #f2efec; }
+			.block { fill: #ff5227; }
+		}
+	</style>
+	<rect class="bg" width="32" height="32"/>
+	<rect class="frame" x="4.5" y="11.5" width="17" height="16"/>
+	<rect class="block" x="18" y="4" width="10" height="10"/>
+</svg>

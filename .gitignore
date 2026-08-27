@@ -1,0 +1,22 @@
+# Media library — ~300MB of originals plus WordPress-generated derivatives.
+# Rebuild it with:  node import/scrape.js --media
+wp-content/uploads/
+
+# Local credentials. Copy .env.example to .env instead.
+.env
+
+# WordPress runtime noise
+wp-content/debug.log
+wp-content/upgrade/
+wp-content/cache/
+
+# Generated icons are committed on purpose (they are tiny and reproducible
+# via import/make-icon.php), so nothing to ignore there.
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+.idea/
+.vscode/
