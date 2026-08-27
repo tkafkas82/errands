@@ -233,31 +233,62 @@ step, no dependencies.
 The hero copy is editable under **Appearance → Customize → ERRANDS front page**
 rather than hardcoded.
 
+## Keeping the site alive
+
+**The root cause of the site "randomly dying".** WSL 2 shuts down its entire VM
+after `vmIdleTimeout` milliseconds with no active session — **60 seconds by
+default** — and there was no `.wslconfig` on this machine. systemd and Docker
+being healthy is irrelevant: the VM goes, and takes the distro, the Docker
+daemon and every container with it. The site therefore died roughly a minute
+after the last command touched WSL, which looks random from the browser.
+
+Two things were needed, because they solve different halves:
+
+1. **`%USERPROFILE%\.wslconfig`** → `vmIdleTimeout=-1`, so a *running* VM is
+   never shut down for being idle. **Requires `wsl --shutdown` to take effect.**
+2. **A logon hook**, because that setting does not *start* anything — after a
+   Windows restart the distro is simply not running. `tools/install-keepalive.cmd`
+   writes a stub into the per-user Startup folder (no Administrator needed, unlike
+   `schtasks /Create`) which runs `tools/keepalive.sh`. That waits for the Docker
+   socket, runs `up.sh`, then holds the distro open with `sleep infinity`.
+
+```cmd
+tools\install-keepalive.cmd          :: install (once)
+wscript.exe tools\wsl-keepalive.vbs  :: start now, without logging out
+```
+
+Check it is holding the distro:
+
+```bash
+wsl -d Ubuntu -e pgrep -af errands-keepalive
+wsl -l -v          # Ubuntu should say Running
+```
+
+The holder renames itself via `exec -a` so `pgrep` can find it. A trailing
+`# tag` comment would not work — the shell strips comments before they reach the
+process command line.
+
 ## Troubleshooting
 
-**WordPress shows "Database Error" even though the database is fine.**
-
-WSL shuts its distro down when nothing holds it open. Docker then brings the
-containers back on its own through `restart: unless-stopped` — but that policy
-restarts each container independently and ignores the `depends_on:
-service_healthy` ordering a real `compose up` honours. Two things follow:
-
-- Apache can come back before MariaDB accepts connections, and
-- if the database container is recreated on a new IP, the running PHP workers
-  keep the old address cached, so every request fails while `wp-cli` and
-  `docker compose exec` still connect perfectly.
-
-That last asymmetry is the tell: if wp-cli works and the browser does not, it is
-this. `up.sh` handles it by waiting for the health check and then bouncing the
-web container so PHP re-resolves `db`. To fix it by hand:
+**WordPress shows "Database Error" even though the database is fine.** Docker
+restores containers through `restart: unless-stopped`, which restarts each one
+independently and ignores the `depends_on: service_healthy` ordering a real
+`compose up` honours. So Apache can return before MariaDB accepts connections,
+and if the database comes back on a new IP the running PHP workers keep the old
+address cached. The tell is the asymmetry: **wp-cli connects fine while the
+browser does not.** `up.sh` handles it; by hand it is:
 
 ```bash
 docker compose restart wordpress
 ```
 
-**Rapid requests from Windows return connection failures (`000`).** WSL2's
+**Blank image tiles.** Since the covers fall back to the generated drawing, a
+blank tile now means the *page* loaded but the images could not — almost always
+the stack being down mid-session. Run `start.bat`.
+
+**Rapid requests from Windows return connection failures (`000`).** WSL 2's
 localhost forwarding drops under bursts of sequential connections. The site
-itself is fine — test from inside WSL, or slow the requests down.
+itself is fine — test from inside WSL, or space the requests out.
 
 ### Notes
 

@@ -1,0 +1,14 @@
+# Copy to %USERPROFILE%\.wslconfig  (e.g. C:\Users\PC\.wslconfig)
+# then run:  wsl --shutdown
+#
+# This file lives outside the repository, so it is kept here for reference.
+# Global WSL 2 setting — applies to every distro, not just Ubuntu.
+
+[wsl2]
+# WSL shuts the whole VM down after this many milliseconds with no active
+# session — 60000 (60s) by default. That took down the Ubuntu distro, systemd,
+# Docker and every running container a minute after the last command finished,
+# which made locally hosted sites appear to die at random.
+# -1 disables idle shutdown; the VM stays up until Windows restarts or you run
+# `wsl --shutdown` yourself.
+vmIdleTimeout=-1
