@@ -19,7 +19,12 @@ host, so everything goes through `wsl -d Ubuntu`.
 | --- | --- |
 | Start | double-click `start.bat` (opens the browser too) |
 | Stop | double-click `stop.bat` |
+| Start from WSL | `./up.sh` |
 | Full rebuild from scratch | in WSL: `cd "/mnt/c/Users/PC/Desktop/bat files/Errands" && ./setup.sh` |
+
+Always start through `start.bat` or `up.sh` rather than a bare
+`docker compose up -d` — see the Database Error note under Troubleshooting for
+why.
 
 - Site: <http://localhost:8080>
 - Admin: <http://localhost:8080/wp-admin> — `admin` / `errands`
@@ -218,6 +223,32 @@ step, no dependencies.
 
 The hero copy is editable under **Appearance → Customize → ERRANDS front page**
 rather than hardcoded.
+
+## Troubleshooting
+
+**WordPress shows "Database Error" even though the database is fine.**
+
+WSL shuts its distro down when nothing holds it open. Docker then brings the
+containers back on its own through `restart: unless-stopped` — but that policy
+restarts each container independently and ignores the `depends_on:
+service_healthy` ordering a real `compose up` honours. Two things follow:
+
+- Apache can come back before MariaDB accepts connections, and
+- if the database container is recreated on a new IP, the running PHP workers
+  keep the old address cached, so every request fails while `wp-cli` and
+  `docker compose exec` still connect perfectly.
+
+That last asymmetry is the tell: if wp-cli works and the browser does not, it is
+this. `up.sh` handles it by waiting for the health check and then bouncing the
+web container so PHP re-resolves `db`. To fix it by hand:
+
+```bash
+docker compose restart wordpress
+```
+
+**Rapid requests from Windows return connection failures (`000`).** WSL2's
+localhost forwarding drops under bursts of sequential connections. The site
+itself is fine — test from inside WSL, or slow the requests down.
 
 ### Notes
 
