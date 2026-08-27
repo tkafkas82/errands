@@ -14,12 +14,16 @@ set -u
 
 PROJECT="/mnt/c/Users/PC/Desktop/bat files/Errands"
 TAG="errands-keepalive"
+PIDFILE="/tmp/errands-keepalive.pid"
 
-# Only one holder at a time. The holder renames itself to $TAG via `exec -a`
-# at the bottom, so this matches argv[0] of an existing instance. (A trailing
-# `# tag` comment would not work — the shell strips comments, so the tag would
-# never reach the process command line.)
-if pgrep -f "$TAG" >/dev/null 2>&1; then
+# Only one holder at a time.
+#
+# A pidfile rather than `pgrep -f "$TAG"`: a substring match on the full command
+# line also matches any *other* process that merely mentions the tag — including
+# a shell running `pgrep -af errands-keepalive` to check on it, which reports two
+# holders when there is one. /tmp is empty on a fresh boot, which is correct:
+# a newly booted distro has no holder.
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then
 	exit 0
 fi
 
@@ -35,6 +39,9 @@ if [ -x "$PROJECT/up.sh" ]; then
 	( cd "$PROJECT" && ./up.sh ) >/dev/null 2>&1 || true
 fi
 
-# Hold the distro open forever, renaming argv[0] to the tag so the guard above
-# can find this instance.
+# Hold the distro open forever.
+#
+# `exec` replaces this shell without changing the PID, so $$ recorded now is the
+# holder's PID. `exec -a` renames argv[0] so the process is recognisable in ps.
+echo $$ > "$PIDFILE"
 exec -a "$TAG" sleep infinity

@@ -257,16 +257,23 @@ tools\install-keepalive.cmd          :: install (once)
 wscript.exe tools\wsl-keepalive.vbs  :: start now, without logging out
 ```
 
-Check it is holding the distro:
+Check it is holding the distro — `wsl -l -v` is the unambiguous one:
 
 ```bash
-wsl -d Ubuntu -e pgrep -af errands-keepalive
-wsl -l -v          # Ubuntu should say Running
+wsl -l -v                                                     # Ubuntu = Running
+wsl -d Ubuntu -e bash -lc 'kill -0 $(cat /tmp/errands-keepalive.pid) && echo alive'
 ```
 
-The holder renames itself via `exec -a` so `pgrep` can find it. A trailing
-`# tag` comment would not work — the shell strips comments before they reach the
-process command line.
+Two traps worth knowing if you edit `keepalive.sh`:
+
+- The single-instance guard uses a **pidfile**, not `pgrep -f errands-keepalive`.
+  A substring match on the full command line also matches any other process that
+  merely *mentions* the tag — including the very command you run to check on it,
+  which then reports two holders when there is one.
+- The holder is renamed with `exec -a` purely so it is recognisable in `ps`.
+  `exec` keeps the same PID, which is why `$$` is recorded before it. A trailing
+  `# tag` comment could not work, as the shell strips comments before they ever
+  reach the process command line.
 
 ## Troubleshooting
 
