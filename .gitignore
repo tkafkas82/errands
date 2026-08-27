@@ -23,3 +23,6 @@ desktop.ini
 
 # Static export output
 dist/
+
+# Publish working copy for the dist repo
+.publish/
