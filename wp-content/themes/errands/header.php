@@ -96,8 +96,11 @@
 </header>
 
 <div class="search-overlay js-search-overlay" role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Search', 'errands' ); ?>">
-	<?php get_search_form(); ?>
-	<p class="label"><?php esc_html_e( 'Press Esc to close', 'errands' ); ?></p>
+	<div class="search-overlay__inner">
+		<?php get_search_form(); ?>
+		<p class="label js-search-status"><?php esc_html_e( 'Start typing to search', 'errands' ); ?></p>
+		<ul class="search-results js-search-results" role="listbox" aria-label="<?php esc_attr_e( 'Search results', 'errands' ); ?>"></ul>
+	</div>
 </div>
 
 <main id="main">

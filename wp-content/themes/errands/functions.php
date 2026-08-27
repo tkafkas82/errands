@@ -72,11 +72,18 @@ function errands_assets() {
 
 	wp_enqueue_script( 'errands', get_template_directory_uri() . '/assets/js/main.js', array(), ERRANDS_VERSION, true );
 	wp_localize_script( 'errands', 'ERRANDS_I18N', array(
-		'close' => __( 'Close', 'errands' ),
-		'prev'  => __( 'Previous image', 'errands' ),
-		'next'  => __( 'Next image', 'errands' ),
-		'of'    => __( 'of', 'errands' ),
+		'close'   => __( 'Close', 'errands' ),
+		'prev'    => __( 'Previous image', 'errands' ),
+		'next'    => __( 'Next image', 'errands' ),
+		'of'      => __( 'of', 'errands' ),
+		'noHits'  => __( 'Nothing matches that.', 'errands' ),
+		'hint'    => __( 'Start typing to search', 'errands' ),
 	) );
+
+	// Search runs in the browser off this index, so it keeps working in the
+	// static export where there is no PHP to answer /?s=. The whole site is
+	// ~24 entries, so the index is a few KB.
+	wp_localize_script( 'errands', 'ERRANDS_INDEX', errands_search_index() );
 
 	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
 		wp_enqueue_script( 'comment-reply' );
@@ -334,6 +341,48 @@ function errands_body_class( $classes ) {
 	return $classes;
 }
 add_filter( 'body_class', 'errands_body_class' );
+
+/* -------------------------------------------------------------------------
+ * Search index for the in-browser search
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Every public entry, flattened for client-side matching.
+ *
+ * Kept deliberately small: short keys, one trimmed excerpt each. Rebuilt on
+ * each request, which is fine at this size and means the static export always
+ * ships a current index.
+ *
+ * @return array<int, array<string, string>>
+ */
+function errands_search_index() {
+	$items = get_posts( array(
+		'post_type'      => array( 'project', 'page', 'post' ),
+		'post_status'    => 'publish',
+		'posts_per_page' => -1,
+		'orderby'        => 'date',
+		'order'          => 'DESC',
+	) );
+
+	$index = array();
+
+	foreach ( $items as $item ) {
+		$text = $item->post_excerpt ? $item->post_excerpt : wp_strip_all_tags( $item->post_content );
+		$type = get_post_type_object( $item->post_type );
+
+		$index[] = array(
+			't' => get_the_title( $item ),
+			'u' => get_permalink( $item ),
+			'y' => get_the_date( 'Y', $item ),
+			's' => errands_series_list( $item->ID ),
+			'k' => $type ? $type->labels->singular_name : $item->post_type,
+			// Enough to match against and to show as a result line.
+			'e' => wp_trim_words( $text, 28, '…' ),
+		);
+	}
+
+	return $index;
+}
 
 /* -------------------------------------------------------------------------
  * Search: include projects

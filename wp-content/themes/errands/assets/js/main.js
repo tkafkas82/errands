@@ -105,6 +105,120 @@
 	}
 
 	/* ---------------------------------------------------------------
+	 * In-browser search
+	 *
+	 * Runs off the index localized into the page, so it works in the
+	 * static export where there is no PHP to answer /?s=. Without JS the
+	 * form still posts to WordPress's own search.
+	 * -------------------------------------------------------------- */
+
+	/**
+	 * Fold a string for accent- and case-insensitive comparison.
+	 *
+	 * Greek needs this more than English: 'Ταξη' should match 'τάξη', and a
+	 * word-final sigma is the same letter as a medial one. Stripping combining
+	 * marks after NFD handles the accents; the final sigma needs folding by
+	 * hand because it is a distinct code point, not a decomposable accent.
+	 */
+	function fold(s) {
+		return String(s == null ? '' : s)
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/\u03c2/g, '\u03c3');
+	}
+
+	var index = Array.isArray(window.ERRANDS_INDEX) ? window.ERRANDS_INDEX : [];
+	var resultsEl = document.querySelector('.js-search-results');
+	var statusEl = document.querySelector('.js-search-status');
+	var searchForm = searchOverlay ? searchOverlay.querySelector('form') : null;
+	var searchInput = searchOverlay ? searchOverlay.querySelector('input[type="search"]') : null;
+
+	if (index.length && resultsEl && searchInput) {
+		// Pre-fold each entry once rather than on every keystroke.
+		var haystack = index.map(function (item) {
+			return fold([item.t, item.e, item.s, item.y, item.k].join(' '));
+		});
+
+		function runSearch(raw) {
+			var q = fold(raw).trim();
+			resultsEl.innerHTML = '';
+
+			if (!q) {
+				if (statusEl) statusEl.textContent = i18n.hint || '';
+				return;
+			}
+
+			// Every term must appear somewhere in the entry.
+			var terms = q.split(/\s+/);
+			var hits = [];
+
+			for (var i = 0; i < index.length; i++) {
+				var ok = true;
+				for (var t = 0; t < terms.length; t++) {
+					if (haystack[i].indexOf(terms[t]) === -1) { ok = false; break; }
+				}
+				if (ok) hits.push(index[i]);
+			}
+
+			if (statusEl) {
+				statusEl.textContent = hits.length
+					? hits.length + (hits.length === 1 ? ' result' : ' results')
+					: (i18n.noHits || 'No results');
+			}
+
+			var frag = document.createDocumentFragment();
+
+			hits.slice(0, 20).forEach(function (hit) {
+				var li = document.createElement('li');
+				var a = document.createElement('a');
+				a.href = hit.u;
+
+				var meta = document.createElement('span');
+				meta.className = 'label';
+				meta.textContent = [hit.k, hit.y, hit.s].filter(Boolean).join(' · ');
+
+				var title = document.createElement('span');
+				title.className = 'search-results__title';
+				title.textContent = hit.t;
+
+				a.appendChild(meta);
+				a.appendChild(title);
+
+				if (hit.e) {
+					var ex = document.createElement('span');
+					ex.className = 'search-results__excerpt';
+					ex.textContent = hit.e;
+					a.appendChild(ex);
+				}
+
+				li.appendChild(a);
+				frag.appendChild(li);
+			});
+
+			resultsEl.appendChild(frag);
+		}
+
+		searchInput.addEventListener('input', function () {
+			runSearch(searchInput.value);
+		});
+
+		// Enter picks the first result instead of navigating to /?s=, which
+		// does not exist on a static host.
+		if (searchForm) {
+			searchForm.addEventListener('submit', function (e) {
+				var first = resultsEl.querySelector('a');
+				if (first) {
+					e.preventDefault();
+					window.location.href = first.href;
+				} else if (!searchInput.value.trim()) {
+					e.preventDefault();
+				}
+			});
+		}
+	}
+
+	/* ---------------------------------------------------------------
 	 * Archive filters
 	 * -------------------------------------------------------------- */
 

@@ -20,3 +20,6 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+
+# Static export output
+dist/

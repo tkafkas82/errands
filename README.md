@@ -198,22 +198,62 @@ docker compose run --rm -e ERRANDS_FORCE=1 cli eval-file /import/import.php
 
 ---
 
-## Deployment
+## Deploying it
 
-**This does not run on Vercel.** Vercel serves static files and serverless
-JS/Python functions — there is no PHP runtime and no MySQL, so WordPress cannot
-run there in any configuration.
+**WordPress itself cannot run on Vercel** — no PHP runtime, no MySQL, in any
+configuration. So the public copy is a **static export**, which suits this site:
+it is read-only, comments are closed, and there are no forms or logins.
 
-Realistic options:
+```bash
+./export.sh                              # -> dist/, root-relative URLs
+./export.sh https://errands.pages.dev    # absolute URLs, for canonical tags
+```
 
-| Option | Notes |
-| --- | --- |
-| **Static export → Vercel** | Good fit. The site is read-only: comments are closed, no forms, no logins. Crawl the local site to flat HTML and deploy that. The one casualty is search, which is PHP — it would be replaced by a small client-side JSON index. Not implemented yet. |
-| **Managed WordPress host** | Keeps the dashboard and search working with no code changes. The usual choice for handing a site back to non-developers. |
-| **VPS with this compose file** | Closest to what is running locally. Add a reverse proxy and TLS, and move the credentials out of `.env`. |
+Then deploy `dist/` anywhere static:
 
-Nothing about the theme is host-specific, so any of these works from the same
-codebase.
+```bash
+npx wrangler pages deploy dist --project-name errands   # Cloudflare Pages
+npx netlify deploy --dir=dist --prod                    # Netlify
+npx vercel deploy --prebuilt dist                       # Vercel
+```
+
+Current export: **1158 files, 205 MB**, largest file 6.1 MB — inside Cloudflare
+Pages' limits (25 MB per file, 20 000 files).
+
+### What the export does
+
+1. `wget` crawls the local site into `dist/` (29 pages) with `--convert-links`.
+2. `tools/export-post.js` rewrites the remaining absolute URLs, strips `?ver=`
+   from asset URLs, and copies the referenced local files straight off disk.
+3. It then **fails loudly** if `style.css`, `main.js`, `favicon.svg`,
+   `404.html` or `index.html` are missing, or if any `localhost` reference
+   survives.
+
+Three things that are easy to get wrong here, all now handled:
+
+- **Search.** There is no PHP to answer `/?s=`, so search runs in the browser
+  from an index baked into each page (~24 entries). It folds Greek accents and
+  final sigma, so *Πολιτικός* matches *πολιτικοσ*.
+- **Assets are excluded from the crawl on purpose.** WordPress serves
+  `style.css?ver=1.2.0`, and a query string cannot be a filename on a static
+  host (or on Windows at all). Rejecting query URLs in `wget` and copying the
+  theme files from disk avoids that — the first attempt at this shipped an
+  export with **no CSS or JS at all**, which is why there is now an explicit
+  check for it.
+- **Full-size lightbox images** live in `data-full` attributes, which no crawler
+  follows. They are copied from disk by the same pass.
+
+Verified after export: all 30 routes correct (404 included), every critical
+asset present, and all 1122 referenced media files on disk — Greek filenames and
+the PDF included. Check that last part with an encoding-safe test, not curl:
+shell and HTTP tooling mangles multibyte paths and will report false 404s.
+
+### If you need a live dashboard instead
+
+A static copy has no wp-admin. You keep editing locally and re-export. If
+colleagues must log in and edit, you need real PHP hosting — a cheap paid tier
+(Hostinger, 20i) rather than a free one, since free tiers throttle and suspend,
+and migration there is FTP plus phpMyAdmin by hand.
 
 ## Editing the theme
 
