@@ -24,5 +24,8 @@ desktop.ini
 # Static export output
 dist/
 
+# Deployment package built by tools/package-deploy.js from dist/
+deploy/
+
 # Publish working copy for the dist repo
 .publish/

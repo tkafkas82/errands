@@ -12,8 +12,14 @@
  * @package Errands
  */
 
-if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
-	exit( "Run this through wp-cli.\n" );
+/*
+ * Normally wp-cli. On a host with no shell it is the admin-only runner in
+ * errands-import-runner.php, which defines ERRANDS_RUNNER and supplies a
+ * WP_CLI logging shim rather than faking the WP_CLI constant — core checks that
+ * constant in a few places and a web request should not claim to be a CLI one.
+ */
+if ( ( ! defined( 'WP_CLI' ) || ! WP_CLI ) && ! defined( 'ERRANDS_RUNNER' ) ) {
+	exit( "Run this through wp-cli, or through Tools -> ERRANDS import.\n" );
 }
 
 require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -21,9 +27,13 @@ require_once ABSPATH . 'wp-admin/includes/file.php';
 
 $force = (bool) getenv( 'ERRANDS_FORCE' );
 
-$data = json_decode( file_get_contents( '/import/import.json' ), true );
+// Sits next to this file, so the same script works under the Docker mount
+// (/import) and on a plain host where this folder was uploaded anywhere.
+$json = getenv( 'ERRANDS_JSON' ) ?: __DIR__ . '/import.json';
+
+$data = json_decode( (string) file_get_contents( $json ), true );
 if ( ! $data ) {
-	WP_CLI::error( 'Could not read /import/import.json — run `node clean.js` first.' );
+	WP_CLI::error( "Could not read $json — run `node clean.js` first." );
 }
 
 /**
